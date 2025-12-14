@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulador Clínico - Dr. Gustavo</title>
+    <!-- Fonte Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           1. VARIÁVEIS & TEMA
+           ========================================= */
+        :root {
+            color-scheme: light;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --accent-blue: #3b82f6;
+            
+            /* Chat */
+            --chat-bg: #e5e5e5;
+            --bubble-agent: #ffffff;
+            --bubble-user: #005c4b;
+            --text-bubble-user: #ffffff;
+            --text-bubble-agent: #0f172a;
+            --border-color: #e2e8f0;
+            
+            /* Audio Player Colors */
+            --player-icon-fill: #6e7c85;
+            --player-wave-idle: #b1b5b9;
+            --player-wave-active: #6e7c85;
+            --mic-badge-bg: #25d366;
+
+            /* Footer Strip */
+            --footer-strip-bg: #3b82f6; 
+            --footer-text-color: #ffffff;
+
+            /* Sombras */
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius-xl: 16px;
+        }
+
+        body.dark {
+            color-scheme: dark;
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            
+            --chat-bg: #0b141a;
+            --bubble-agent: #1f2c34;
+            --bubble-user: #005c4b;
+            --text-bubble-user: #ffffff;
+            --text-bubble-agent: #e9edef;
+            --border-color: #334155;
+            
+            --player-icon-fill: #8696a0;
+            --player-wave-idle: #535f66;
+            --player-wave-active: #8696a0;
+            --mic-badge-bg: #00a884;
+
+            --footer-strip-bg: #2563eb;
+            --footer-text-color: #ffffff;
+
+            --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        /* =========================================
+           2. RESET & ESTRUTURA
+           ========================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s ease, color 0.3s ease; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            height: 100dvh; 
+            width: 100vw;
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative;
+        }
+
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Botão Tema */
+        .theme-toggle { position: absolute; top: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-card); z-index: 100; color: var(--text-main); transition: transform 0.2s; }
+        .theme-toggle:hover { transform: scale(1.05); }
+
+        /* =========================================
+           3. HOME & HEADER
+           ========================================= */
+        #home-screen { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 40px 20px 0px 20px; 
+            position: relative; 
+            z-index: 10; 
+            overflow-y: auto; 
+            min-height: 100dvh; 
+            overflow-x: hidden;
+        }
+
+        .header-main { text-align: center; margin-bottom: 30px; max-width: 800px; position: relative; z-index: 2; flex-shrink: 0; }
+        
+        .header-main h1 { 
+            font-size: 2.2rem; 
+            font-weight: 800; 
+            line-height: 1.2; 
+            margin-bottom: 12px; 
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase; 
+            letter-spacing: -0.5px; 
+            padding-top: 5px; 
+        }
+
+        .header-main .subtitle { font-size: 1.05rem; color: var(--text-muted); font-weight: 400; margin-bottom: 5px; display: block; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+
+        /* Cards Container - CENTRALIZADO */
+        .cards-wrapper { 
+            display: flex; 
+            justify-content: center; 
+            width: 100%; 
+            position: relative; 
+            z-index: 2; 
+            flex-shrink: 0; 
+            margin-bottom: 40px;
+        }
+
+        .sim-card { 
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            padding: 30px; 
+            width: 100%; 
+            max-width: 380px; 
+            box-shadow: var(--shadow-card); 
+            text-align: center; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        
+        .sim-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+            border-color: var(--primary); 
+        }
+
+        .card-content { flex-grow: 1; display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
+
+        /* CONTAINER DE EMOJI */
+        .card-img-container { 
+            width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin-bottom: 15px; 
+            border: 4px solid var(--bg-body); box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+            display: flex; align-items: center; justify-content: center;
+            background-color: #eef2ff; font-size: 3.5rem; line-height: 1;
+        }
+
+        .sim-card h3 { font-size: 1.25rem; margin-bottom: 4px; color: var(--text-main); font-weight: 700; }
+        .sim-card .role-text { font-size: 0.8rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-bottom: 12px; display: block; letter-spacing: 0.5px; }
+        .sim-card p { color: var(--text-muted); line-height: 1.5; font-size: 0.9rem; }
+        
+        .btn-action { background-color: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); margin-top: auto; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-action:hover { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3); }
+
+        /* Rodapé Diagonal */
+        .diagonal-footer { position: relative; margin-top: auto; width: 100%; height: 160px; background-color: transparent; overflow: hidden; z-index: 1; pointer-events: none; flex-shrink: 0; max-width: 100vw; }
+        .footer-content { position: relative; width: 100%; height: 100%; }
+        
+        .strip-track { 
+            position: absolute; left: -10%; width: 120%; min-width: 800px; height: 45px; 
+            display: flex; align-items: center; white-space: nowrap; 
+            background-color: var(--footer-strip-bg); box-shadow: 0 2px 8px rgba(0,0,0,0.05); transform-origin: center;
+        }
+
+        .strip-text { font-weight: 600; font-size: 0.95rem; text-transform: uppercase; font-style: normal; color: var(--footer-text-color); padding-right: 60px; word-spacing: 10px; user-select: none; letter-spacing: 1px; }
+        .strip-1 { bottom: 20px; transform: rotate(-1.5deg); animation: slideRight 60s linear infinite; z-index: 2; }
+        .strip-2 { bottom: 70px; transform: rotate(1deg); animation: slideLeft 65s linear infinite; opacity: 0.8; z-index: 1; }
+        
+        @keyframes slideLeft { 0% { transform: translateX(0) rotate(1deg); } 100% { transform: translateX(-20%) rotate(1deg); } }
+        @keyframes slideRight { 0% { transform: translateX(-20%) rotate(-1.5deg); } 100% { transform: translateX(0) rotate(-1.5deg); } }
+
+        /* =========================================
+           5. TELA CHAT
+           ========================================= */
+        #chat-screen { display: flex; flex-direction: column; height: 100dvh; background-color: var(--chat-bg); position: relative; z-index: 50; }
+        .chat-header { background-color: var(--bg-card); padding: 15px 20px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.03); z-index: 10; flex-shrink: 0; }
+        .back-btn { background: transparent; border: none; color: var(--text-main); cursor: pointer; padding: 8px; margin-right: 10px; display: flex; align-items: center; }
+        
+        /* AVATAR DO CHAT (EMOJI) */
+        .chat-avatar-circle { 
+            width: 42px; height: 42px; border-radius: 50%; background-color: #cbd5e1; margin-right: 12px; 
+            border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; line-height: 1;
+        }
+
+        .chat-info h3 { font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 2px; }
+        .chat-info span { font-size: 0.8rem; color: #10b981; display: flex; align-items: center; gap: 4px; font-weight: 500; }
+        .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+
+        .chat-area-wrapper { flex: 1; overflow-y: auto; position: relative; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; background-size: 400px; background-color: var(--chat-bg); background-blend-mode: soft-light; -webkit-overflow-scrolling: touch; }
+        body.dark .chat-area-wrapper { background-blend-mode: overlay; opacity: 0.9; }
+        body.dark .chat-area-wrapper::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(11, 20, 26, 0.95); pointer-events: none; z-index: 0; }
+        .chat-area-wrapper > * { position: relative; z-index: 1; }
+
+        .bubble { max-width: 85%; padding: 10px 14px; font-size: 0.95rem; line-height: 1.5; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); animation: popIn 0.3s ease; }
+        .bubble.agent { align-self: flex-start; background-color: var(--bubble-agent); color: var(--text-bubble-agent); border-radius: 0px 12px 12px 12px; }
+        .bubble.user { align-self: flex-end; background-color: var(--bubble-user); color: var(--text-bubble-user); border-radius: 12px 0px 12px 12px; }
+        .bubble.agent.audio-bubble { padding: 0; overflow: hidden; }
+
+        .msg-time { display: block; font-size: 0.65rem; margin-top: 4px; opacity: 0.7; text-align: right; }
+
+        /* PLAYER ESTILO WHATSAPP */
+        .wap-player { display: flex; align-items: center; padding: 10px 15px 10px 10px; gap: 12px; min-width: 280px; }
+        .wap-controls { position: relative; flex-shrink: 0; }
+        
+        /* Avatar do Player (Emoji) */
+        .wap-avatar-container { position: relative; flex-shrink: 0; width: 50px; height: 50px; }
+        .wap-avatar-circle { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #f1f5f9; font-size: 1.8rem; line-height: 1; }
+        
+        .wap-mic-badge { position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background-color: var(--mic-badge-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bubble-agent); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .wap-mic-badge svg { width: 12px; height: 12px; fill: white; }
+        .wap-content { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+        .wap-top-row { display: flex; align-items: center; gap: 10px; }
+        .wap-play-btn { cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--player-icon-fill); }
+        .wap-play-btn svg { width: 34px; height: 34px; fill: currentColor; }
+        .wap-waveform { display: flex; align-items: center; gap: 2px; height: 24px; flex-grow: 1; }
+        .wap-bar { width: 3px; background-color: var(--player-wave-idle); border-radius: 2px; animation: none; transition: height 0.2s, background-color 0.2s; }
+        .wap-waveform.playing .wap-bar { animation: wapWave 1s infinite ease-in-out; background-color: var(--player-wave-active); }
+        @keyframes wapWave { 0%, 100% { height: 30%; } 50% { height: 100%; } }
+        .wap-bar:nth-child(odd) { animation-duration: 0.6s; } .wap-bar:nth-child(2n) { animation-duration: 0.9s; }
+        .wap-bar:nth-child(3n) { animation-duration: 1.1s; } .wap-bar:nth-child(4n) { animation-duration: 0.8s; }
+        .wap-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); padding-left: 42px; margin-top: -2px; }
+        
+        audio { display: none; }
+
+        /* Input Area */
+        .chat-input-area { background-color: var(--bg-card); padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--border-color); flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .chat-input-area input { flex: 1; padding: 14px 20px; border-radius: 24px; border: 1px solid var(--border-color); background-color: var(--bg-body); color: var(--text-main); font-family: 'Poppins', sans-serif; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .chat-input-area input:focus { border-color: var(--primary); }
+        .send-btn { background-color: var(--primary); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .send-btn:hover { background-color: var(--primary-hover); }
+        .send-btn svg { width: 22px; height: 22px; fill: white; margin-left: 3px; }
+
+        /* Typing */
+        .typing { align-self: flex-start; background-color: var(--bubble-agent); padding: 10px 15px; border-radius: 0px 12px 12px 12px; display: flex; gap: 5px; width: fit-content; margin-bottom: 10px; }
+        .dot { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* Mobile */
+        @media (max-width: 768px) { .header-main h1 { font-size: 1.8rem; } .sim-card { padding: 25px 20px; width: 100%; max-width: 100%; } .strip-text { font-size: 0.85rem; letter-spacing: 1px; } #home-screen { padding-top: 30px; } }
+    </style>
+</head>
+<body>
+
+    <!-- Toggle Theme -->
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Alternar Tema">
+        <svg id="icon-sun" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+
+    <!-- TELA HOME -->
+    <div id="home-screen" class="fade-in">
+        
+        <div class="header-main">
+            <!-- Título Principal -->
+            <h1>SIMULADOR CLÍNICO DE ALTA FIDELIDADE</h1>
+            <!-- Subtítulo Humanizado -->
+            <span class="subtitle">Ambiente imersivo para desenvolvimento de raciocínio clínico e prática de anamnese.</span>
+        </div>
+
+        <div class="cards-wrapper">
+            
+            <!-- Card Médico (ÚNICO) -->
+            <div class="sim-card">
+                <div class="card-img-container">
+                    <span>👨‍⚕️</span>
+                </div>
+                <div class="card-content">
+                    <h3>Dr. Gustavo Montenegro</h3>
+                    <span class="role-text">Especialista em Trauma e Medicina Esportiva</span>
+                    <!-- Texto Revisado -->
+                    <p>Discuta casos clínicos, interprete exames e defina condutas médicas com foco técnico e baseado em evidências.</p>
+                </div>
+                <button class="btn-action" onclick="openChat()">Iniciar Simulação</button>
+            </div>
+
+        </div>
+
+        <!-- Rodapé Diagonal com Termos Técnicos -->
+        <footer class="diagonal-footer">
+            <div class="footer-content">
+                <div class="strip-track strip-1">
+                    <span class="strip-text">RACIOCÍNIO CLÍNICO • ANAMNESE ESTRUTURADA • DISCUSSÃO DE CASOS • CENÁRIOS REALISTAS • TOMADA DE DECISÃO • RACIOCÍNIO CLÍNICO • ANAMNESE ESTRUTURADA •</span>
+                </div>
+                <div class="strip-track strip-2">
+                    <span class="strip-text">EDUCAÇÃO MÉDICA • COMUNICAÇÃO CLÍNICA • EXPERIÊNCIA IMERSIVA • AVALIAÇÃO FUNCIONAL • TREINAMENTO CLÍNICO • EDUCAÇÃO MÉDICA • COMUNICAÇÃO CLÍNICA •</span>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- TELA CHAT (Overlay) -->
+    <div id="chat-screen" class="hidden">
+        
+        <!-- Navbar -->
+        <div class="chat-header">
+            <button class="back-btn" onclick="goBackHome()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <!-- Avatar Emoji do Chat -->
+            <div id="chat-avatar-div" class="chat-avatar-circle"></div>
+            <div class="chat-info">
+                <h3 id="header-name">Nome do Personagem</h3>
+                <span><i class="status-dot"></i> Online</span>
+            </div>
+        </div>
+
+        <!-- Containers de Mensagens -->
+        <div class="chat-area-wrapper">
+            <div id="messages-container" class="hidden" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="typing-indicator" class="typing hidden"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+
+        <!-- Inputs -->
+        <div id="input-area" class="chat-input-area hidden">
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem..." autocomplete="off">
+            <button class="send-btn" id="send-btn" onclick="handleSend()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
+        </div>
+
+    </div>
+
+    <script>
+        function getUserId() {
+            let id = localStorage.getItem("sim_clinical_user_id");
+            if (!id) {
+                id = "user-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+                localStorage.setItem("sim_clinical_user_id", id);
+            }
+            return id;
+        }
+
+        const USER_ID = getUserId();
+        const LS_THEME_KEY = "sim_clinical_theme";
+        const LS_HISTORY_KEY = "sim_chat_history_doctor_" + USER_ID; 
+
+        const DOCTOR_CONFIG = {
+            name: "Dr. Gustavo Montenegro",
+            avatar: "👨‍⚕️", 
+            url: "https://primary-vpr5-production.up.railway.app/webhook/doctor-1",
+            initialMsg: "Olá sou Dr Gustavo médico assistente do Richard. Estou disponível para discutir o caso"
+        };
+
+        const elements = {
+            container: document.getElementById('messages-container'),
+            input: document.getElementById('chat-input'),
+            btn: document.getElementById('send-btn'),
+            typing: document.getElementById('typing-indicator'),
+            inputArea: document.getElementById('input-area')
+        };
+
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem(LS_THEME_KEY);
+            const body = document.body;
+            const iconSun = document.getElementById('icon-sun');
+            const iconMoon = document.getElementById('icon-moon');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark');
+                iconMoon.classList.add('hidden');
+                iconSun.classList.remove('hidden');
+            } else {
+                body.classList.remove('dark');
+                iconMoon.classList.remove('hidden');
+                iconSun.classList.add('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark');
+            localStorage.setItem(LS_THEME_KEY, body.classList.contains('dark') ? 'dark' : 'light');
+            initTheme();
+        }
+
+        async function loadHistory() {
+            const history = JSON.parse(localStorage.getItem(LS_HISTORY_KEY) || "[]");
+            elements.container.innerHTML = "";
+
+            if (history.length === 0) {
+                const timeNow = getCurrentTime();
+                renderMessage(elements.container, DOCTOR_CONFIG.initialMsg, 'agent', timeNow);
+                saveMessageToHistory('agent', DOCTOR_CONFIG.initialMsg, timeNow);
+            } else {
+                for (const msg of history) {
+                    if (msg.type === 'audio') {
+                        await renderAudioBase64(elements.container, msg.content, msg.time, DOCTOR_CONFIG.avatar);
+                    } else {
+                        renderMessage(elements.container, msg.content, msg.type, msg.time);
+                    }
+                }
+            }
+            scrollToBottom(elements.container.parentElement);
+        }
+
+        function saveMessageToHistory(type, content, time) {
+            const history = JSON.parse(localStorage.getItem(LS_HISTORY_KEY) || "[]");
+            history.push({ type, content, time });
+            try { localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history)); } catch (e) { console.warn("LS full"); }
+        }
+
+        function openChat() {
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.remove('hidden');
+            document.getElementById('chat-screen').classList.add('fade-in');
+            
+            document.getElementById('header-name').textContent = DOCTOR_CONFIG.name;
+            document.getElementById('chat-avatar-div').textContent = DOCTOR_CONFIG.avatar;
+
+            elements.container.classList.remove('hidden');
+            elements.inputArea.classList.remove('hidden');
+
+            loadHistory();
+        }
+
+        function goBackHome() {
+            document.getElementById('chat-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+            document.getElementById('home-screen').classList.add('fade-in');
+        }
+
+        function initApp() {
+            document.getElementById('home-screen').classList.remove('hidden');
+            document.getElementById('chat-screen').classList.add('hidden');
+            initTheme();
+        }
+
+        document.getElementById('chat-input').addEventListener('keypress', (e) => { if(e.key==='Enter') handleSend(); });
+
+        async function handleSend() {
+            const text = elements.input.value.trim();
+            const timeNow = getCurrentTime();
+            if (!text) return;
+
+            renderMessage(elements.container, text, 'user', timeNow);
+            saveMessageToHistory('user', text, timeNow);
+            
+            elements.input.value = '';
+            elements.btn.disabled = true;
+            elements.typing.classList.remove('hidden');
+            elements.container.parentElement.appendChild(elements.typing); 
+            scrollToBottom(elements.container.parentElement);
+
+            try {
+                const response = await fetch(DOCTOR_CONFIG.url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text, userId: USER_ID })
+                });
+
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+
+                const contentType = response.headers.get("content-type");
+                
+                if (contentType && (contentType.includes("audio") || contentType.includes("octet-stream"))) {
+                    const blob = await response.blob();
+                    const audioUrl = URL.createObjectURL(blob);
+                    renderAudio(elements.container, audioUrl, timeNow, DOCTOR_CONFIG.avatar);
+                    
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        saveMessageToHistory('audio', reader.result, timeNow);
+                    }
+                    reader.readAsDataURL(blob);
+                } 
+                else {
+                    const rawResponse = await response.text();
+                    let data;
+                    let isJson = false;
+                    try { data = JSON.parse(rawResponse); isJson = true; } catch (e) { data = { type: 'text', message: rawResponse }; }
+                    if (Array.isArray(data)) data = data[0] || {};
+                    const respTime = getCurrentTime();
+                    
+                    const audioContent = data.audio || data.audioUrl;
+                    
+                    if (isJson && (data.type === 'audio' || (audioContent && typeof audioContent === 'string'))) {
+                        await renderAudioBase64(elements.container, audioContent, respTime, DOCTOR_CONFIG.avatar);
+                        saveMessageToHistory('audio', audioContent, respTime);
+                    } else {
+                        const textContent = data.message || data.text || data.output || (isJson ? JSON.stringify(data) : rawResponse);
+                        renderMessage(elements.container, textContent, 'agent', respTime);
+                        saveMessageToHistory('agent', textContent, respTime);
+                    }
+                }
+                elements.typing.classList.add('hidden');
+            } catch (error) {
+                elements.typing.classList.add('hidden');
+                renderMessage(elements.container, `⚠️ Erro: ${error.message}`, 'agent', timeNow);
+            } finally {
+                elements.btn.disabled = false;
+                elements.input.focus();
+            }
+        }
+
+        function renderMessage(container, text, type, time) {
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${type === 'user' ? 'user' : 'agent'}`;
+            bubble.innerHTML = `${text}<span class="msg-time">${time}</span>`;
+            container.appendChild(bubble);
+            scrollToBottom(container.parentElement);
+        }
+
+        function renderAudio(container, blobUrl, time, avatarEmoji) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble agent audio-bubble'; 
+            const uniqueId = 'audio-' + Date.now() + Math.random().toString(36).substr(2, 5);
+            
+            const barCount = 35;
+            let barsHtml = '';
+            for (let i = 0; i < barCount; i++) {
+                const height = Math.floor(Math.random() * 60) + 20;
+                barsHtml += `<div class="wap-bar" style="height: ${height}%"></div>`;
+            }
+
+            bubble.innerHTML = `
+                <div class="wap-player">
+                    <div class="wap-controls">
+                        <div class="wap-play-btn" onclick="togglePlay('${uniqueId}')">
+                            <svg id="icon-play-${uniqueId}" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                            <svg id="icon-pause-${uniqueId}" class="hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                        </div>
+                    </div>
+                    <div class="wap-content">
+                        <div class="wap-top-row">
+                            <div class="wap-waveform" id="wave-${uniqueId}">${barsHtml}</div>
+                        </div>
+                        <div class="wap-meta"><span id="time-${uniqueId}">0:00 / --:--</span></div>
+                    </div>
+                    <div class="wap-avatar-container">
+                        <div class="wap-avatar-circle">${avatarEmoji}</div>
+                        <div class="wap-mic-badge"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path></svg></div>
+                    </div>
+                </div>
+                <audio id="${uniqueId}" src="${blobUrl}" preload="metadata" onloadedmetadata="setDuration('${uniqueId}')" ontimeupdate="updateTime('${uniqueId}')" onended="resetPlayer('${uniqueId}')"></audio>
+                <span class="msg-time" style="padding-right: 14px; padding-bottom: 5px;">${time}</span>
+            `;
+            container.appendChild(bubble);
+            scrollToBottom(container.parentElement);
+        }
+
+        window.setDuration = function(id) {
+            const audio = document.getElementById(id);
+            const timeDisplay = document.getElementById(`time-${id}`);
+            if(audio && timeDisplay && audio.duration !== Infinity && !isNaN(audio.duration)) {
+                timeDisplay.textContent = `0:00 / ${formatTime(audio.duration)}`;
+            }
+        };
+
+        window.togglePlay = function(id) {
+            const audio = document.getElementById(id);
+            const playIcon = document.getElementById(`icon-play-${id}`);
+            const pauseIcon = document.getElementById(`icon-pause-${id}`);
+            const wave = document.getElementById(`wave-${id}`);
+            if (audio.paused) {
+                document.querySelectorAll('audio').forEach(a => { if(a.id !== id) { a.pause(); resetPlayer(a.id); } });
+                audio.play();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                wave.classList.add('playing');
+            } else {
+                audio.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                wave.classList.remove('playing');
+            }
+        };
+
+        window.updateTime = function(id) {
+            const audio = document.getElementById(id);
+            const timeDisplay = document.getElementById(`time-${id}`);
+            if(!audio.duration || audio.duration === Infinity) return;
+            timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+        };
+
+        window.resetPlayer = function(id) {
+            const audio = document.getElementById(id);
+            const playIcon = document.getElementById(`icon-play-${id}`);
+            const pauseIcon = document.getElementById(`icon-pause-${id}`);
+            const wave = document.getElementById(`wave-${id}`);
+            const timeDisplay = document.getElementById(`time-${id}`);
+            if (playIcon) playIcon.classList.remove('hidden');
+            if (pauseIcon) pauseIcon.classList.add('hidden');
+            if (wave) wave.classList.remove('playing');
+            if (audio) {
+                audio.currentTime = 0;
+                if(timeDisplay && audio.duration) timeDisplay.textContent = `0:00 / ${formatTime(audio.duration)}`;
+            }
+        }
+
+        async function renderAudioBase64(container, audioSource, time, avatarEmoji) {
+            if (!audioSource) return;
+            let cleanSource = audioSource.toString().trim().replace(/\s/g, '');
+            if (!cleanSource.startsWith('data:')) { cleanSource = `data:audio/mpeg;base64,${cleanSource}`; }
+            try {
+                const res = await fetch(cleanSource);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                renderAudio(container, blobUrl, time, avatarEmoji);
+            } catch (e) {
+                renderMessage(container, "⚠️ Erro áudio.", 'agent', time);
+            }
+        }
+
+        function getCurrentTime() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+        function scrollToBottom(container) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
+
+        initApp();
+    </script>
+</body>
+</html>
